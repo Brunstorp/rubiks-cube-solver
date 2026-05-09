@@ -2,6 +2,7 @@
 from collections import Counter
 
 from cube import Cube
+from cube_solver import sticker_to_cubie
 
 VALID_LETTERS = set("FULRDB")
 
@@ -47,6 +48,58 @@ def validate_state(state):
             raise StateError(
                 f"centre at index {idx} must be {expected}, got {state[idx]}"
             )
+
+
+def _perm_sign(perm):
+    """Parity (number of inversions mod 2) of a permutation."""
+    n = len(perm)
+    inv = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            if perm[i] > perm[j]:
+                inv += 1
+    return inv % 2
+
+
+def validate_solvability(state):
+    """Reject cube states that no sequence of legal moves can produce.
+
+    parse_state + validate_state already cover counts and centres. This adds
+    the three solvability invariants on top:
+      * total corner-orientation sum ≡ 0 (mod 3)
+      * total edge-orientation sum ≡ 0 (mod 2)
+      * sign(corner permutation) == sign(edge permutation)
+    Plus a piece-set sanity check that catches impossible colour combos
+    (e.g. a corner painted U+R+L, which can't exist on a real cube).
+    Without these, the Kociemba solver returns "solutions" that don't
+    actually solve the cube.
+    """
+    cubie = sticker_to_cubie(state)
+    cp, co, ep, eo = cubie.cp, cubie.co, cubie.ep, cubie.eo
+
+    if sorted(cp) != list(range(8)):
+        raise StateError(
+            "unsolvable cube: a corner has an impossible colour combination"
+        )
+    if sorted(ep) != list(range(12)):
+        raise StateError(
+            "unsolvable cube: an edge has an impossible colour combination"
+        )
+    if sum(co) % 3 != 0:
+        raise StateError(
+            "unsolvable cube: a corner is twisted in place "
+            "(total corner twist must be a multiple of 3)"
+        )
+    if sum(eo) % 2 != 0:
+        raise StateError(
+            "unsolvable cube: a single edge is flipped "
+            "(total edge flips must be even)"
+        )
+    if _perm_sign(cp) != _perm_sign(ep):
+        raise StateError(
+            "unsolvable cube: two pieces appear swapped "
+            "(corner and edge permutation parities must match)"
+        )
 
 
 def trace_animation_states(initial_state, moves):

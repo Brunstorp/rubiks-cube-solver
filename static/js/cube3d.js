@@ -170,13 +170,16 @@ export class ThreeCube {
             if (!info) { resolve(); return; }
 
             // Collect all root-level cubeRoot children whose centre lies on
-            // the rotating slice (cubelets and the 9 stickers facing outward
-            // on that slice — they're all separate children of cubeRoot).
+            // the rotating slice. The threshold has to exceed the sticker
+            // outward-offset (0.501) so the rotating face's *own* stickers
+            // (which sit at layer ± 0.501) get included along with the
+            // cubelets (at exactly ± layer) and the wrap-around stickers
+            // from neighbouring faces (also at exactly ± layer in this axis).
             const movers = [];
             for (const obj of [...this.cubeRoot.children]) {
                 const p = obj.position;
                 const v = info.axis === 'x' ? p.x : info.axis === 'y' ? p.y : p.z;
-                if (Math.abs(v - info.layer) < 0.5) movers.push(obj);
+                if (Math.abs(v - info.layer) < 0.6) movers.push(obj);
             }
 
             const group = new THREE.Group();

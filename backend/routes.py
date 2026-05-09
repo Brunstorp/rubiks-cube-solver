@@ -7,6 +7,7 @@ from .cube_state import (
     StateError,
     parse_state,
     trace_animation_states,
+    validate_solvability,
     validate_state,
 )
 
@@ -20,6 +21,7 @@ def solve():
     try:
         state = parse_state(data.get("state"))
         validate_state(state)
+        validate_solvability(state)
     except StateError as e:
         return jsonify({"error": str(e)}), 400
 

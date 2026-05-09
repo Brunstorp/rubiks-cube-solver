@@ -4,7 +4,7 @@ A personal project to build a Rubik's Cube solver from scratch.
 
 ## Status
 
-Work in progress.
+Work in progress. Doesnt work so I have to implement Kociembas algorithm
 
 ## Goals
 

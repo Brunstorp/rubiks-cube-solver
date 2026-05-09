@@ -162,6 +162,15 @@ class Cube:
         cls.ALL_MOVES = moves
         return moves
 
+    def random_scramble(self, length=20):
+        import random
+        moves = list(self.table.keys())
+        scramble = " ".join(random.choice(moves) for _ in range(length))
+        self.move(scramble)
+        if self.verbose:
+            print(f"Random scramble: {scramble}")
+        return scramble
+    
     # not used in solver but for playing around and testing
     def move(self, moves: str):
 
@@ -213,8 +222,7 @@ if __name__ == "__main__":
     test_cube(Cube())
     
     cube = Cube()
-    new_state = cube.move("D2 U' R2 U F2 D2 U' R2 U' B' L2 R' B' D2 U B2 L' D' R2")
-    
+    cube.random_scramble()
     
     print(cube)
 

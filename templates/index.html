@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rubik's Cube Solver</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Rubik's Cube Solver</h1>
+        <p class="subtitle">
+            Drag to rotate the cube. Pick a colour, click stickers to paint.
+            Centre stickers are locked.
+        </p>
+    </header>
+
+    <main>
+        <section class="cube-area">
+            <div id="cube-container">
+                <canvas id="cube-canvas"></canvas>
+                <div id="face-labels"></div>
+            </div>
+            <div id="status-bar"></div>
+        </section>
+
+        <aside class="controls">
+            <fieldset>
+                <legend>Colour</legend>
+                <div class="palette" id="palette">
+                    <button class="swatch" data-color="U" style="background:#ffffff" title="U / White"></button>
+                    <button class="swatch" data-color="D" style="background:#ffd400" title="D / Yellow"></button>
+                    <button class="swatch" data-color="F" style="background:#1bb24b" title="F / Green"></button>
+                    <button class="swatch" data-color="B" style="background:#1a4dd6" title="B / Blue"></button>
+                    <button class="swatch" data-color="L" style="background:#ff7a00" title="L / Orange"></button>
+                    <button class="swatch" data-color="R" style="background:#d80000" title="R / Red"></button>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Cube</legend>
+                <div class="row">
+                    <button id="btn-solved">Reset to solved</button>
+                    <button id="btn-scramble">Random scramble</button>
+                </div>
+                <div class="row">
+                    <button id="btn-solve" class="primary">Solve</button>
+                </div>
+            </fieldset>
+
+            <fieldset id="solution-panel" class="hidden">
+                <legend>Solution</legend>
+                <div id="solution-summary"></div>
+                <div id="moves-list"></div>
+                <div class="row stepper">
+                    <button id="btn-first" title="Reset to scrambled state">|&lt;</button>
+                    <button id="btn-prev" title="Previous move">&lt;</button>
+                    <button id="btn-play" title="Play / pause">▶</button>
+                    <button id="btn-next" title="Next move">&gt;</button>
+                    <button id="btn-last" title="Jump to solved state">&gt;|</button>
+                </div>
+                <div id="step-indicator"></div>
+            </fieldset>
+        </aside>
+    </main>
+
+    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

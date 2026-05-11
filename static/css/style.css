@@ -199,3 +199,288 @@ button.primary:hover:not(:disabled) { background: #1d4ed8; }
     color: #aaa;
     font-size: 0.85rem;
 }
+
+/* ─── Camera capture modal ──────────────────────────────────────────── */
+
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 1rem;
+}
+.modal.hidden { display: none; }
+
+.modal-content {
+    background: #1c1c20;
+    border: 1px solid #2c2c33;
+    border-radius: 8px;
+    padding: 1.1rem;
+    max-width: 600px;
+    width: 100%;
+    max-height: 95vh;
+    overflow-y: auto;
+}
+
+.modal-content header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+.modal-content h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+#cam-close {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 0 8px;
+    line-height: 1;
+}
+#cam-close:hover { color: #fff; background: none; }
+
+#cam-instruction {
+    margin: 0.4rem 0 0.6rem;
+    color: #ccc;
+    font-size: 0.88rem;
+    min-height: 2.5em;
+}
+
+.cam-progress {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 0.5rem;
+}
+.cam-progress .dot {
+    flex: 1;
+    text-align: center;
+    padding: 4px 0;
+    border-radius: 4px;
+    background: #2a2a30;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 0.78rem;
+    color: #777;
+}
+.cam-progress .dot.done {
+    background: #1e3a8a;
+    color: #cfd9ff;
+}
+.cam-progress .dot.current {
+    background: #2563eb;
+    color: #fff;
+    box-shadow: 0 0 6px rgba(96, 165, 250, 0.6);
+}
+
+.video-stage {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    background: #000;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+#cam-video, #cam-snap-canvas {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    /* Mirror the display so the user can steer the cube intuitively (right
+     * hand moves right). The underlying canvas pixels stay unmirrored, so
+     * the upload is still in the orientation the classifier expects. */
+    transform: scaleX(-1);
+}
+
+/* Overlay canvas where we draw the detected sticker boxes. Sits on top of
+ * the live video, mirrored to match. Pointer-events off so OrbitControls /
+ * future click handlers still see through. */
+#cam-overlay-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    transform: scaleX(-1);
+}
+
+.cam-status {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    pointer-events: none;
+    transition: background-color 0.15s;
+}
+.cam-status.ok { background: rgba(28, 160, 70, 0.85); }
+.cam-status.bad { background: rgba(170, 30, 30, 0.85); }
+.cam-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.cam-guide {
+    width: 65%;
+    aspect-ratio: 1;
+    border: 3px dashed rgba(255, 255, 255, 0.65);
+    border-radius: 8px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.25);
+}
+
+.cam-error {
+    background: #4a1d1d;
+    border: 1px solid #ff6464;
+    color: #ffb4b4;
+    padding: 0.5rem 0.7rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.cam-actions {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.cam-fallback {
+    margin: 0.7rem 0 0;
+    color: #888;
+    font-size: 0.78rem;
+}
+.cam-fallback .link {
+    color: #60a5fa;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+/* Wizard two-column body: camera on the left, captured-face mini preview
+ * + per-step palette on the right. Stacks on narrow screens. */
+.wizard-body {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+}
+@media (max-width: 640px) {
+    .wizard-body { grid-template-columns: 1fr; }
+}
+
+.wizard-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+.sidebar-label {
+    margin: 0;
+    color: #888;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.mini-face {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    gap: 3px;
+    aspect-ratio: 1;
+    background: #2c2c33;
+    padding: 4px;
+    border-radius: 4px;
+    /* Mirror the mini-face to match the mirrored camera + overlay. The
+     * underlying captured[] array stays in cube.py's row-major order;
+     * only the visual layout flips. Click targeting still works because
+     * CSS transforms don't change which DOM element receives the click —
+     * the user clicks the visually-leftmost cell, hits the index 2 DOM
+     * node, paints sticker index 2, which is what's at top-right of the
+     * unmirrored cube and therefore top-left of the mirrored display. */
+    transform: scaleX(-1);
+}
+
+.mini-cell {
+    aspect-ratio: 1;
+    background: #1a1a1f;
+    border: 2px dashed #4a4a50;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: transform 0.08s, box-shadow 0.08s;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.25);
+}
+.mini-cell:hover:not(.center) { transform: scale(1.06); }
+.mini-cell.filled { border-style: solid; border-color: rgba(0,0,0,0.35); }
+.mini-cell.center {
+    cursor: not-allowed;
+    border-style: solid;
+    border-color: rgba(255, 255, 255, 0.55);
+    border-width: 3px;
+}
+.mini-cell.color-F { background: #1bb24b; }
+.mini-cell.color-U { background: #ffffff; }
+.mini-cell.color-L { background: #ff7a00; }
+.mini-cell.color-R { background: #d80000; }
+.mini-cell.color-D { background: #ffd400; }
+.mini-cell.color-B { background: #2363e8; }
+
+.mini-palette {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+}
+.mini-swatch {
+    aspect-ratio: 1;
+    border: 2px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 0;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2);
+}
+.mini-swatch:hover { border-color: #555; }
+.mini-swatch.active {
+    border-color: #fff;
+    box-shadow: 0 0 0 1px #fff inset, 0 0 4px rgba(255,255,255,0.4);
+}
+
+.wizard-footer {
+    display: flex;
+    gap: 6px;
+    justify-content: space-between;
+    margin-top: 0.3rem;
+}
+
+/* Inline colour chips used in the instruction text. Match the palette
+ * swatch colours so the wording lines up with the cube's own colours. */
+.ci {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 0.82rem;
+    letter-spacing: 0.03em;
+    margin: 0 1px;
+    vertical-align: baseline;
+}
+.ci-white  { background: #ffffff; color: #000; }
+.ci-yellow { background: #ffd400; color: #000; }
+.ci-green  { background: #1bb24b; color: #fff; }
+.ci-blue   { background: #2363e8; color: #fff; }
+.ci-orange { background: #ff7a00; color: #fff; }
+.ci-red    { background: #e21c1c; color: #fff; }
+.ci-hint   { color: #aaa; font-style: italic; font-size: 0.82rem; }

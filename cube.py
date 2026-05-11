@@ -162,8 +162,11 @@ class Cube:
         cls.ALL_MOVES = moves
         return moves
 
-    def random_scramble(self, length=20):
+    def random_scramble(self, length=None):
+        
         import random
+        if length is None:
+            length = random.randint(30, 40)
         moves = list(self.table.keys())
         scramble = " ".join(random.choice(moves) for _ in range(length))
         self.move(scramble)

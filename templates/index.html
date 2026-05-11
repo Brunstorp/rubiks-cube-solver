@@ -52,6 +52,9 @@
                     <button id="btn-scramble">Random scramble</button>
                 </div>
                 <div class="row">
+                    <button id="btn-capture">📷 Scan cube with camera</button>
+                </div>
+                <div class="row">
                     <button id="btn-solve" class="primary">Solve</button>
                 </div>
             </fieldset>
@@ -71,6 +74,43 @@
             </fieldset>
         </aside>
     </main>
+
+    <div id="camera-modal" class="modal hidden">
+        <div class="modal-content">
+            <header>
+                <h2 id="cam-title">Capture face</h2>
+                <button id="cam-close" aria-label="Close">×</button>
+            </header>
+            <p id="cam-instruction">Position the cube in the centre of the frame.</p>
+            <div class="cam-progress" id="cam-progress"></div>
+            <div class="wizard-body">
+                <div class="video-stage">
+                    <video id="cam-video" autoplay playsinline muted></video>
+                    <canvas id="cam-snap-canvas" class="hidden"></canvas>
+                    <canvas id="cam-overlay-canvas"></canvas>
+                    <div class="cam-overlay"><div class="cam-guide"></div></div>
+                    <div class="cam-status" id="cam-status">Scanning…</div>
+                </div>
+                <div class="wizard-sidebar">
+                    <p class="sidebar-label">This face</p>
+                    <div id="mini-face" class="mini-face"></div>
+                    <p class="sidebar-label">Paint colour</p>
+                    <div id="mini-palette" class="mini-palette"></div>
+                    <button id="cam-apply">Apply camera detection</button>
+                </div>
+            </div>
+            <div id="cam-error" class="cam-error hidden"></div>
+            <div class="wizard-footer">
+                <button id="cam-prev">← Previous face</button>
+                <button id="cam-next" class="primary">Next face →</button>
+            </div>
+            <p class="cam-fallback">
+                No camera, or want to use existing photos?
+                <label class="link" for="cam-file">Upload one for the current face</label>
+                <input type="file" id="cam-file" accept="image/*" hidden>
+            </p>
+        </div>
+    </div>
 
     <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>

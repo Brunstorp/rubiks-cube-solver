@@ -3,6 +3,7 @@
  * together. Holds the current solution and step index, plus a play loop.
  */
 import { ThreeCube } from './cube3d.js';
+import { runCaptureWizard } from './capture.js';
 
 const SOLVED = 'F'.repeat(9) + 'U'.repeat(9) + 'L'.repeat(9)
              + 'R'.repeat(9) + 'D'.repeat(9) + 'B'.repeat(9);
@@ -48,6 +49,15 @@ $('btn-solved').addEventListener('click', () => {
     setStatus('Reset to solved.');
 });
 
+$('btn-capture').addEventListener('click', () => {
+    if (playTimer) togglePlay();
+    runCaptureWizard((state) => {
+        cube.setState(state);
+        clearSolution();
+        setStatus('Scanned. Verify the cube and hit Solve.');
+    });
+});
+
 $('btn-scramble').addEventListener('click', async () => {
     setStatus('Scrambling…');
     try {
@@ -88,10 +98,17 @@ $('btn-solve').addEventListener('click', async () => {
 
 // ─── Step controls ────────────────────────────────────────────────────────
 $('btn-first').addEventListener('click', () => goToStep(0));
-$('btn-prev').addEventListener('click', () => goToStep(solution.currentStep - 1));
+$('btn-prev').addEventListener('click', () => goToStep(solution.currentStep - 1, true));
 $('btn-next').addEventListener('click', () => goToStep(solution.currentStep + 1, true));
 $('btn-last').addEventListener('click', () => goToStep(solution.states.length - 1));
 $('btn-play').addEventListener('click', togglePlay);
+
+// Inverse of a single quarter/half turn: U → U', U' → U, U2 → U2.
+function inverseMove(m) {
+    if (m.endsWith('2')) return m;
+    if (m.endsWith("'")) return m.slice(0, -1);
+    return m + "'";
+}
 
 // ─── Solution rendering ───────────────────────────────────────────────────
 function showSolution(data, dt) {
@@ -127,7 +144,14 @@ async function goToStep(target, animate = false) {
     target = Math.max(0, Math.min(solution.states.length - 1, target));
     if (target === solution.currentStep) return;
     if (animate && target === solution.currentStep + 1) {
+        // Step forward: animate the move that takes us to `target`.
         const move = solution.moves[solution.currentStep];
+        await cube.animateMoveAndApply(move, solution.states[target], STEP_DURATION_MS);
+    } else if (animate && target === solution.currentStep - 1) {
+        // Step backward: animate the inverse of the move that brought us here.
+        // moves[target] is the move that, applied to states[target], yields
+        // states[currentStep] — so its inverse undoes that.
+        const move = inverseMove(solution.moves[target]);
         await cube.animateMoveAndApply(move, solution.states[target], STEP_DURATION_MS);
     } else {
         cube.setState(solution.states[target]);

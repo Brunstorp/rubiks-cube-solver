@@ -109,6 +109,7 @@ export class ThreeCube {
         this.state = null;
         this.cubelets = [];
         this.stickers = new Array(54);
+        this.uncertainMarkers = {};   // sticker_idx -> Mesh
 
         this.editable = true;
         this.stickerClickCallback = null;
@@ -124,6 +125,8 @@ export class ThreeCube {
 
     setState(state54) {
         this.state = [...state54];
+        // Loading a new state invalidates whatever stickers were flagged.
+        this.clearUncertain();
         this._rebuild();
     }
 
@@ -145,11 +148,63 @@ export class ThreeCube {
         this.state[idx] = color;
         const mesh = this.stickers[idx];
         if (mesh) mesh.material.color.setHex(COLORS[color]);
+        // The user just told us what colour this sticker really is, so the
+        // classifier's doubt is resolved. Drop the marker.
+        this._removeUncertainMarker(idx);
+    }
+
+    /** Highlight stickers the classifier wasn't confident about so the user
+     *  can verify them. Pass an empty list (or null) to clear. */
+    setUncertain(indices) {
+        this.clearUncertain();
+        if (!indices || indices.length === 0) return;
+        const geom = new THREE.PlaneGeometry(0.94, 0.94);
+        for (const idx of indices) {
+            if (idx < 0 || idx >= 54) continue;
+            if ((idx % 9) === 4) continue;
+            const info = STICKER_MAP[idx];
+            const normal = FACE_NORMAL[info.face];
+            const mat = new THREE.MeshBasicMaterial({
+                color: 0x00ffff,
+                transparent: true,
+                opacity: 0.85,
+                depthWrite: false,
+            });
+            const mesh = new THREE.Mesh(geom, mat);
+            // Sit just behind the sticker (sticker is at offset 0.501) so the
+            // larger marker shows as a ring around it.
+            mesh.position.set(
+                info.pos[0] + normal.x * 0.500,
+                info.pos[1] + normal.y * 0.500,
+                info.pos[2] + normal.z * 0.500,
+            );
+            mesh.lookAt(
+                mesh.position.x + normal.x,
+                mesh.position.y + normal.y,
+                mesh.position.z + normal.z,
+            );
+            this.cubeRoot.add(mesh);
+            this.uncertainMarkers[idx] = mesh;
+        }
+    }
+
+    clearUncertain() {
+        for (const idx of Object.keys(this.uncertainMarkers)) {
+            this._removeUncertainMarker(Number(idx));
+        }
+    }
+
+    _removeUncertainMarker(idx) {
+        const mesh = this.uncertainMarkers[idx];
+        if (!mesh) return;
+        this.cubeRoot.remove(mesh);
+        mesh.geometry.dispose();
+        mesh.material.dispose();
+        delete this.uncertainMarkers[idx];
     }
 
     /**
      * Animate a single move (e.g. "U2"), then snap to the new logical state.
-     * Returns a promise that resolves when the rotation animation completes.
      */
     async animateMoveAndApply(move, newState, durationMs) {
         if (this._isAnimating) return;
@@ -341,7 +396,19 @@ export class ThreeCube {
     _loop() {
         requestAnimationFrame(this._loop);
         this.controls.update();
+        this._pulseUncertainMarkers();
         this.renderer.render(this.scene, this.camera);
         if (this.state) this._updateFaceLabels();
+    }
+
+    _pulseUncertainMarkers() {
+        const keys = Object.keys(this.uncertainMarkers);
+        if (keys.length === 0) return;
+        // Smooth 0.4 -> 0.95 sine pulse, ~1.5 s period.
+        const t = performance.now() / 1000;
+        const opacity = 0.4 + 0.275 * (1 + Math.sin(t * 4));
+        for (const k of keys) {
+            this.uncertainMarkers[k].material.opacity = opacity;
+        }
     }
 }
